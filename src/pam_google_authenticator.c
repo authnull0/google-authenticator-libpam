@@ -101,6 +101,7 @@ const char *get_error_msg(void) {
 #endif
 
 static void log_message(int priority, pam_handle_t *pamh,
+
                         const char *format, ...) {
   char *service = NULL;
   if (pamh)
@@ -183,165 +184,71 @@ struct pam_module _pam_listfile_modstruct = {
  * indent-tabs-mode: nil
  * End:
  */
+//function definition
+int myStrStr(char* str, char* sub)
+{
+    int flag = 0;
 
+    int i = 0, len1 = 0, len2 = 0;
+
+    len1 = strlen(str);
+    len2 = strlen(sub);
+
+    while (str[i] != '\0') {
+        if (str[i] == sub[0]) {
+            if ((i + len2) > len1)
+                break;
+
+            if (strncmp(str + i, sub, len2) == 0) {
+                flag = 1;
+                break;
+            }
+        }
+        i++;
+    }
+
+    return flag;
+}
 
 int google_authenticator(pam_handle_t *pamh,
  		int argc, const char **argv) {
 log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
+//const char* const username = get_user_name(pamh, &params);
 
-
+ char cwd[PATH_MAX];
+   if (getcwd(cwd, sizeof(cwd)) != NULL) {
+       log_message(LOG_INFO,pamh,"Current working dir: %s\n", cwd);
+   }
 char line[LINE_BUFSIZE];
     int linenr;
     FILE *output;
 char *s;
     log_message(LOG_INFO,pamh,"Starting DID Assertion");
-output = popen("/bin/sh /home/ubuntu/google_pam_test/google-authenticator-libpam/src/did.sh", "r");
-    //  system("/bin/sh /home/ubuntu/google_pam_test/google-authenticator-libpam/src/did.sh > /home/ubuntu/out1.txt");
-    /* Get a pipe where the output from the scripts comes in */
-  //  pipe = popen("did.sh", "r");
+output =popen("/bin/bash ${cwd}/did.sh", "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+    
 if (output == NULL){
 	log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
 }
 else {
 	int count =1;
 
-while (fgets(line, LINE_BUFSIZE-1, output) != NULL)
+while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
     log_message(LOG_INFO,pamh,"Execution Result %s", line);
-s = strstr(line,"\"isValid\"\:true");
-if (s != NULL){
+s = myStrStr(line,"\"isValid\"\:true");
+if (s){
 	log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
-}else{
-log_message(LOG_INFO,pamh,"No match, Authentication Failure");
-//return PAM_AUTH_ERR;
+return PAM_SUCCESS;
 }
-
 }
+}
+log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
 pclose(output);
 
-      log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /home/user/out.log for output");
-   // if (pipe == NULL) {  /* check for errors */
-     //   log_message(LOG_INFO,pamh,"Pipe Null Err"); /* report error message */
-        //return 1;        /* return with exit code indicating error 
-    //}
-
-    /* Read script output from the pipe line by line */
-    //linenr = 1;
-    /*while (fgets(line, LINE_BUFSIZE, pipe) != NULL) {
-        log_message(LOG_INFO,pamh,"Script output line %d: %s", linenr, line);
-        ++linenr;
-    }*/
+log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
     
-    /* Once here, out of the loop, the script has ended. */
-    //pclose(pipe); /* Close the pipe 
-//system("/home/ubuntu/google_pam_test/google-authenticator-libpam/src/did.sh");
-//CURL *curl;
- // CURLcode res;
- 
-  /* In windows, this will init the winsock stuff */
-//  curl_global_init(CURL_GLOBAL_ALL);
- 
-  /* get a curl handle */
- // curl = curl_easy_init();
-  //if(curl) {
-    /* First set the URL that is about to receive our POST. This URL can
-       just as well be an https:// URL if that is what should receive the
-       data. */
-    /*curl_easy_setopt(curl, CURLOPT_URL, "https://auth0.service.authnull.com/authnull0/api/v1/authn/do-authentication");
-    /* Now specify the POST data */
-    /*curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "username=yy@gmail.com&responseType=ssh&endpoint=bijay&group=muthu");
- 
-    /* Perform the request, res will get the return code */
-    /*res = curl_easy_perform(curl);
-    /* Check for errors */
-   /* if(res != CURLE_OK){
-      fprintf(stderr, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(res));
-    }else {
-    printf("response from DID API", res);
-    }
-    /* always cleanup */
-   /*curl_easy_cleanup(curl);
-  }
-  
-
- curl_global_cleanup();*/
- //
- //
-     /* first what are we going to send and where are we going to send it? */
-   /* int portno =        8080;
-    char *host =        "https://auth0.service.authnull.com/authnull0/api/v1/authn/do-authentication";
-    char *message_fmt = "POST /username=yy@gmail.com&responseType=ssh&endpoint=bijay&group=muthu HTTP/1.0\r\n\r\n";
-
-    struct hostent *server;
-    struct sockaddr_in serv_addr;
-    int sockfd, bytes, sent, received, total;
-    char message[1024],response[4096];
-
-   // if (argc < 3) { puts("Parameters:  "); exit(0); }
-
-    /* fill in the parameters */
-   // sprintf(message,message_fmt,argv[1],argv[2]);
-   // printf("Request:\n%s\n",message);
-
-     /*create the socket */
-    /*sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) log_message(LOG_INFO,pamh, "ERROR opening socket");
-
-    /* lookup the ip address */
-    /*server = gethostbyname(host);
-    if (server == NULL) log_message(LOG_INFO, pamh,"ERROR, no such host");
-
-    /* fill in the structure */
-    /*memset(&serv_addr,0,sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(portno);
-    memcpy(&serv_addr.sin_addr.s_addr,server->h_addr,server->h_length);
-
-    /* connect the socket */
-    /*if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-        log_message(LOG_ERR,pamh, "ERROR connecting");
-
-    /* send the request */
-    /*total = strlen(message);
-    sent = 0;
-    do {
-        bytes = write(sockfd,message+sent,total-sent);
-        if (bytes < 0)
-            log_message(LOG_ERR,"ERROR writing message to socket","");
-        if (bytes == 0)
-            break;
-        sent+=bytes;
-    } while (sent < total);
-
-    /* receive the response */
-    /*memset(response,0,sizeof(response));
-    total = sizeof(response)-1;
-    received = 0;
-    do {
-        bytes = read(sockfd,response+received,total-received);
-        if (bytes < 0)
-            error("ERROR reading response from socket");
-        if (bytes == 0)
-            break;
-        received+=bytes;
-    } while (received < total);
-
-    /*
-     * if the number of received bytes is the total size of the
-     * array then we have run out of space to store the response
-     * and it hasn't all arrived yet - so that's a bad thing
-     */
-    /*if (received == total)
-        error("ERROR storing complete response from socket");
-
-    /* close the socket */
-    //close(sockfd);
-
-    /* process response */
-    //printf("Response:\n%s\n",response);
 
     
-return PAM_SUCCESS;
+return PAM_AUTH_ERR;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
  }
 
 
