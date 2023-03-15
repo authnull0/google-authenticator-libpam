@@ -11,21 +11,36 @@ prefixhost="Static hostname: "
 hostname=${hoststr#"$prefixhost"}
 #echo $hostname
 
-user=`id -u -n`
+user=`id | cut -d "(" -f 2 | cut -d ")" -f1`
+
+
+file="./conf.properties"
+
+while IFS='=' read -r key value
+do
+    key=$(echo $key | tr '.' '_')
+    eval ${key}=\${value}
+done < "$file"
+
+echo "User Id (ssh.pam.user) =         " ${ssh_pam_user}
+echo "user password (ssh.pam.groups) = " ${ssh_pam_groups}
+
 generate_post_data()
 {
   cat <<EOF
 {
-  "username": "`echo $user`" ,
+  "username": "`echo ${ssh_pam_user}`" ,
   "responseType": "ssh",
   "endpoint": "`echo $hoststr`",
-  "group": "`echo $groupsStr`"
+  "group": "`echo ${ssh_pam_groups}`"
 }
 EOF
 }
 
 echo $(generate_post_data)
 
+
+echo "Script executed from: ${PWD}"
 
 curl -H "Accept: application/json" \
 -H "Content-Type:application/json" \

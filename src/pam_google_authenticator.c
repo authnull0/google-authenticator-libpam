@@ -210,10 +210,34 @@ int myStrStr(char* str, char* sub)
     return flag;
 }
 
+
+
+static const char *get_user_name(pam_handle_t *pamh, const Params *params) {
+  // Obtain the user's name
+  const char *username;
+  if (pam_get_user(pamh, &username, NULL) != PAM_SUCCESS ||
+      !username || !*username) {
+    log_message(LOG_ERR, pamh,
+                "pam_get_user() failed to get a user name"
+                " when checking verification code");
+    return NULL;
+  }
+  if (params->debug) {
+    log_message(LOG_INFO, pamh, "debug: start of google_authenticator for \"%s\"", username);
+  }
+  return username;
+}
+
+
+
 int google_authenticator(pam_handle_t *pamh,
  		int argc, const char **argv) {
 log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
-//const char* const username = get_user_name(pamh, &params);
+   
+  Params params = { 0 };
+  params.allowed_perm = 0600;
+
+const char* const username = get_user_name(pamh, &params);
 
  char cwd[PATH_MAX];
    if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -223,8 +247,8 @@ char line[LINE_BUFSIZE];
     int linenr;
     FILE *output;
 char *s;
-    log_message(LOG_INFO,pamh,"Starting DID Assertion");
-output =popen("/bin/bash ${cwd}/did.sh", "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+    log_message(LOG_INFO,pamh,"Starting DID Assertion",username);
+output =popen("/bin/sh /home/tempadminmfa/gpam/google-authenticator-libpam/src/did.sh", "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
     
 if (output == NULL){
 	log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
@@ -248,7 +272,7 @@ log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/au
     
 
     
-return PAM_AUTH_ERR;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
+return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
  }
 
 
