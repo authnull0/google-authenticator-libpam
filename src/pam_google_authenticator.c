@@ -29,6 +29,8 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #include <sys/socket.h> /* socket, connect */
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
@@ -50,12 +52,16 @@
 #define PAM_SM_AUTH
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
+#include <security/pam_modutil.h>
+#include <security/pam_ext.h>
+#include <security/_pam_macros.h>
+
 
 #include "base32.h"
 #include "hmac.h"
 #include "sha1.h"
 #include "util.h"
-#include <curl/curl.h>
+
 
 
 // Module name shortened to work with rsyslog.
@@ -99,6 +105,39 @@ const char *get_error_msg(void) {
   return error_msg;
 }
 #endif
+
+
+#define ENV_ITEM(n) { (n), #n }
+static struct {
+  int item;
+  const char *name;
+} env_items[] = {
+  ENV_ITEM(PAM_SERVICE),
+  ENV_ITEM(PAM_USER),
+  ENV_ITEM(PAM_TTY),
+  ENV_ITEM(PAM_RHOST),
+  ENV_ITEM(PAM_RUSER),
+};
+
+/* move_fd_to_non_stdio copies the given file descriptor to something other
+ * than stdin, stdout, or stderr.  Assumes that the caller will close all
+ * unwanted fds after calling. */
+static int
+move_fd_to_non_stdio (pam_handle_t *pamh, int fd)
+{
+  while (fd < 3)
+    {
+      fd = dup(fd);
+      if (fd == -1)
+	{
+	  int err = errno;
+	  pam_syslog (pamh, LOG_ERR, "dup failed: %m");
+	  _exit (err);
+	}
+    }
+  return fd;
+}
+
 
 static void log_message(int priority, pam_handle_t *pamh,
 
@@ -156,7 +195,8 @@ static void log_message(int priority, pam_handle_t *pamh,
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags UNUSED_ATTR,
                                    int argc, const char **argv) {
-  return google_authenticator(pamh, argc, argv);
+return google_authenticator(pamh, argc, argv);
+//return call_exec ("auth", pamh, argc, argv);
 }
 
 PAM_EXTERN int
@@ -167,7 +207,7 @@ pam_sm_setcred (pam_handle_t *pamh UNUSED_ATTR,
   return PAM_SUCCESS;
 }
 
-#ifdef PAM_STATIC
+#ifdef PAM_STATC
 struct pam_module _pam_listfile_modstruct = {
   MODULE_NAME,
   pam_sm_authenticate,
@@ -212,43 +252,100 @@ int myStrStr(char* str, char* sub)
 
 
 
-static const char *get_user_name(pam_handle_t *pamh, const Params *params) {
-  // Obtain the user's name
-  const char *username;
-  if (pam_get_user(pamh, &username, NULL) != PAM_SUCCESS ||
-      !username || !*username) {
-    log_message(LOG_ERR, pamh,
-                "pam_get_user() failed to get a user name"
-                " when checking verification code");
-    return NULL;
+// return the user name in heap-allocated buffer.
+// Caller frees.
+static const char *getUserName(uid_t uid) {
+  struct passwd pwbuf, *pw;
+  char *buf;
+  #ifdef _SC_GETPW_R_SIZE_MAX
+  int len = sysconf(_SC_GETPW_R_SIZE_MAX);
+  if (len <= 0) {
+    len = 4096;
   }
-  if (params->debug) {
-    log_message(LOG_INFO, pamh, "debug: start of google_authenticator for \"%s\"", username);
+  #else
+  int len = 4096;
+  #endif
+  buf = malloc(len);
+  char *user;
+  if (getpwuid_r(uid, &pwbuf, buf, len, &pw) || !pw) {
+    user = malloc(32);
+    snprintf(user, 32, "%d", uid);
+  } else {
+    user = strdup(pw->pw_name);
+    if (!user) {
+      perror("malloc()");
+      _exit(1);
+    }
   }
-  return username;
+  free(buf);
+  return user;
 }
-
-
 
 int google_authenticator(pam_handle_t *pamh,
  		int argc, const char **argv) {
 log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
-   
-  Params params = { 0 };
-  params.allowed_perm = 0600;
+//const char* const username = get_user_name(pamh, &params);
+int pam_err;
+  register struct passwd *pw;
+  //register uid_t uid;
+char *user = NULL;
+char *host = NULL;
+char *service = NULL;
+ const uid_t uid = getuid();
+ int retval;
+ //const char *user = getUserName(uid);
+ /* identify user */
 
-const char* const username = get_user_name(pamh, &params);
+retval = pam_get_user(pamh, &user, NULL);
+ if (retval != PAM_SUCCESS)
+    {
+    log_message(LOG_INFO,pamh,"retval",retval);
+    }
+
+ log_message(LOG_INFO,pamh,"retvalusere %s",user);
+
 
  char cwd[PATH_MAX];
    if (getcwd(cwd, sizeof(cwd)) != NULL) {
        log_message(LOG_INFO,pamh,"Current working dir: %s\n", cwd);
    }
+
+
+//CURL *curl;
+ // CURLcode res;
+  //char url[]= "https://api.did.kloudlearn.com/authnull0/api/v1/authn/do-authentication";
+  //char postData[] = "username=newuser&password=newpasswd&msg=test&msisdn=9999999999&tagname=Demo&shortcode=8888&telcoId=5&dnRequired=false";
+  //char* jsonObj = "{ \"username\" : \'user\' , \"responseType\" : \"ssh\" }";
+  
+//log_message(LOG_INFO,pamh,"curl req to be sent",jsonObj);
+  //struct curl_slist *headers = NULL;
+    //curl_slist_append(headers, "Accept: application/json");
+    //curl_slist_append(headers, "Content-Type: application/json");
+    //curl_slist_append(headers, "charset: utf-8");
+
+  //curl = curl_easy_init();
+  //if(curl) {
+   // curl_easy_setopt(curl, CURLOPT_URL, url);
+    //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    //curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonObj);
+   //curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT,50);
+   // res = curl_easy_perform(curl);
+    
+   // log_message(LOG_INFO,pamh,"Invoking lib curl fetching the resp",res);
+   // curl_easy_cleanup(curl);
+
+  //}
 char line[LINE_BUFSIZE];
     int linenr;
     FILE *output;
 char *s;
-    log_message(LOG_INFO,pamh,"Starting DID Assertion",username);
-output =popen("/bin/sh /home/tempadminmfa/gpam/google-authenticator-libpam/src/did.sh", "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+    log_message(LOG_INFO,pamh,"Starting DID Assertion");
+
+    char command[100];
+    int len;
+len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
+
+output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
     
 if (output == NULL){
 	log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
@@ -274,5 +371,4 @@ log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/au
     
 return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
  }
-
 
