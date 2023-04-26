@@ -283,32 +283,32 @@ static const char *getUserName(uid_t uid) {
 
 int google_authenticator(pam_handle_t *pamh,
  		int argc, const char **argv) {
-log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
-//const char* const username = get_user_name(pamh, &params);
-int pam_err;
-  register struct passwd *pw;
-  //register uid_t uid;
-char *user = NULL;
-char *host = NULL;
-char *service = NULL;
- const uid_t uid = getuid();
- int retval;
- //const char *user = getUserName(uid);
- /* identify user */
-
-retval = pam_get_user(pamh, &user, NULL);
- if (retval != PAM_SUCCESS)
-    {
+  log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
+  //const char* const username = get_user_name(pamh, &params);
+  int pam_err;
+    register struct passwd *pw;
+    //register uid_t uid;
+  char *user = NULL;
+  char *host = NULL;
+  char *service = NULL;
+  const uid_t uid = getuid();
+  int retval;
+  //const char *user = getUserName(uid);
+  /* identify user */
+  boolean userExistFlag = true;
+  retval = pam_get_user(pamh, &user, NULL);
+  if (retval != PAM_SUCCESS) {
     log_message(LOG_INFO,pamh,"retval",retval);
-    }
+    userExistFlag = false;
+  }
 
- log_message(LOG_INFO,pamh,"retvalusere %s",user);
+  log_message(LOG_INFO,pamh,"retvalusere %s",user);
 
 
- char cwd[PATH_MAX];
-   if (getcwd(cwd, sizeof(cwd)) != NULL) {
-       log_message(LOG_INFO,pamh,"Current working dir: %s\n", cwd);
-   }
+  char cwd[PATH_MAX];
+  if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    log_message(LOG_INFO,pamh,"Current working dir: %s\n", cwd);
+  }
 
 
 //CURL *curl;
@@ -335,40 +335,63 @@ retval = pam_get_user(pamh, &user, NULL);
    // curl_easy_cleanup(curl);
 
   //}
-char line[LINE_BUFSIZE];
-    int linenr;
-    FILE *output;
-char *s;
-    log_message(LOG_INFO,pamh,"Starting DID Assertion");
+  char line[LINE_BUFSIZE];
+  int linenr;
+  FILE *output;
+  char *s;
+  log_message(LOG_INFO,pamh,"Starting DID Assertion");
 
-    char command[100];
-    int len;
-len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
+  char command[100];
+  int len;
 
-output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+  if(userExistFlag) {
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
+    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+  
+    if (output == NULL){
+      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
+    } else {
+      int count =1;
+
+      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
+        log_message(LOG_INFO,pamh,"Execution Result %s", line);
+        s = myStrStr(line,"\"isValid\"\:true");
+        if (s){
+          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
+          return PAM_SUCCESS;
+        }
+      }
+    }
+    log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
+    pclose(output);
+
+    log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
     
-if (output == NULL){
-	log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
-}
-else {
-	int count =1;
+  } else {
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/fetchUser.sh %s",user);
+    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+  
+    if (output == NULL){
+      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
+    } else {
+      int count =1;
 
-while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-    log_message(LOG_INFO,pamh,"Execution Result %s", line);
-s = myStrStr(line,"\"isValid\"\:true");
-if (s){
-	log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
-return PAM_SUCCESS;
-}
-}
-}
-log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
-pclose(output);
+      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
+        log_message(LOG_INFO,pamh,"Execution Result %s", line);
+        s = myStrStr(line, user);
+        if (s){
+          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
+          return PAM_SUCCESS;
+        }
+      }
+    }
+    log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
+    pclose(output);
 
-log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
+    log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
     
-
+  }
     
-return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
- }
+    return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
+}
 
