@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "config.h"
-#include <curl/curl.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -31,6 +30,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #include <sys/socket.h> /* socket, connect */
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
@@ -295,13 +295,17 @@ int google_authenticator(pam_handle_t *pamh,
   int retval;
   //const char *user = getUserName(uid);
   /* identify user */
-  boolean userExistFlag = true;
+  bool userExistLocallyFlag = false;
   retval = pam_get_user(pamh, &user, NULL);
   if (retval != PAM_SUCCESS) {
     log_message(LOG_INFO,pamh,"retval",retval);
-    userExistFlag = false;
   }
 
+  struct passwd *pwd = getpwnam(user);
+  if (pwd != NULL) {
+    userExistLocallyFlag = true
+    printf("User %s does not exist.\n", user);
+  }
   log_message(LOG_INFO,pamh,"retvalusere %s",user);
 
 
