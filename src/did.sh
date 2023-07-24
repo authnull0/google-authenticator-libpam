@@ -37,9 +37,9 @@ generate_post_data()
   cat <<EOF
 {
   "username": "`echo ${user}`" ,
-  "responseType": "ssh",
-  "endpoint": "`echo $hoststr`",
-  "group": "`echo ${value}`"
+  "credentialType": "EPM",
+  "hostname": "`echo $hoststr`",
+  "groupName": "`echo ${value}`"
 }
 EOF
 }
@@ -56,7 +56,7 @@ curl -H "Accept: application/json" \
 -H "Content-Type:application/json" \
 --connect-timeout 50 \
 -m 50 \
--X POST --data "$(generate_post_data)" "https://api.did.authnull.com/authnull0/api/v1/authn/do-authentication"
+-X POST --data "$(generate_post_data)" "https://api.did.authnull.com/authnull0/api/v1/authn/v2/do-authentication"
 
 #content=$(sed '$ d' <<< "$response")
 
