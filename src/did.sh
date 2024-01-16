@@ -61,6 +61,11 @@ RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --co
 SSO=$(echo "$RES" | jq -r '.ssoUrl')
 echo "$SSO"
 
+if [[ $(echo "$RES" | jq '.requestId') != "null" ]]; then
+        echo "requestId Present in the response"
+else
+        echo "requestId not present in the response"
+fi
 #content=$(sed '$ d' <<< "$response")
 
 #echo "$content"
