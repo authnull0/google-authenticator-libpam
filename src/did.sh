@@ -31,6 +31,8 @@ user=$1
 
 #echo "User Id (ssh.pam.user) =         " ${ssh_pam_user}
 #echo "user password (ssh.pam.groups) = " ${ssh_pam_groups}
+uuid=$(uuidgen)
+echo $uuid
 
 generate_post_data()
 {
@@ -40,6 +42,9 @@ generate_post_data()
   "credentialType": "EPM",
   "hostname": "`echo $hoststr`",
   "groupName": "`echo ${value}`"
+  "orgId": 84,
+  "tenantId": 7,
+  "requestId": "`echo $uuid`"
 }
 EOF
 }
@@ -52,11 +57,9 @@ echo "First agr is $1"
 
 
 
-curl -H "Accept: application/json" \
--H "Content-Type:application/json" \
---connect-timeout 50 \
--m 50 \
--X POST --data "$(generate_post_data)" "https://api.did.authnull.com/authnull0/api/v1/authn/v2/do-authentication"
+RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 50 -m 50 -X POST --data "$(generate_post_data)"  "https://v1.api.authnull.com/authnull0/api/v1/authn/v3/do-authenticationV4")
+SSO=$(echo "$RES" | jq -r '.ssoUrl')
+echo "$SSO"
 
 #content=$(sed '$ d' <<< "$response")
 
