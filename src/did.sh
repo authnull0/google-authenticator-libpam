@@ -41,7 +41,7 @@ generate_post_data()
   "username": "`echo ${user}`" ,
   "credentialType": "EPM",
   "hostname": "`echo $hoststr`",
-  "groupName": "`echo ${value}`"
+  "groupName": "`echo ${value}`",
   "orgId": 84,
   "tenantId": 7,
   "requestId": "`echo $uuid`"
