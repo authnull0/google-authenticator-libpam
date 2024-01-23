@@ -357,18 +357,20 @@ int google_authenticator(pam_handle_t *pamh,
       log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
     } else {
       int count =1;
-
+      char *response;
+      // Delimiter
+      const char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
         if (s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
-          char *response = strtok(line, '?') 
+          response = strtok(line, &delimiter);
           // Check if there is a second token
           if (response != NULL) {
               // Get the second token
-              response = strtok(NULL, '?');
+              response = strtok(NULL, &delimiter);
 
               // Check if there is a second token
               if (response != NULL) {
