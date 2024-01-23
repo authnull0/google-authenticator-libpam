@@ -359,6 +359,24 @@ int google_authenticator(pam_handle_t *pamh,
 
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
+        s = myStrStr(line,"");
+        if (s){
+          log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
+          break;
+        }
+      }
+    }
+
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s",line);
+    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+  
+    if (output == NULL){
+      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
+    } else {
+      int count =1;
+
+      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
+        log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"\"isValid\"\:true");
         if (s){
           log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);

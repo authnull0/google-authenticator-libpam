@@ -59,28 +59,16 @@ echo "First agr is $1"
 
 RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 50 -m 50 -X POST --data "$(generate_post_data)"  "https://v1.api.authnull.com/authnull0/api/v1/authn/v3/do-authenticationV4")
 SSO=$(echo "$RES" | jq -r '.ssoUrl')
-echo "$RES"
+requestId=$(echo "$RES" | jq '.requestId')
 
-if [[ $(echo "$RES" | jq '.requestId') != "null" ]]; then
+if [[ $requestId != "null" ]]; then
         echo "requestId present in the response"
 else
         echo "requestId not present in the response"
 fi
-generate_s2_post_data()
-{
-  cat <<EOF
-{
-  "requestId": "`echo $uuid`"
-}
-EOF
-}
 
-if [[ $(echo "$RES" | jq '.stage') != "0" ]]; then
-        RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 120 -m 120 -X POST --data "$(generate_s2_post_data)"  "https://v1.api.authnull.com/authnull0/api/v1/authn/v3/do-authenticationV4Step2")
-        echo "$RES"
-fi
 #echo "Response Body: $RESPONSE_BODY"
-#content=$(sed '$ d' <<< "$response")
+content=$(sed '$ d' <<< "$requestId")
 
 #echo "$content"
 return 0
