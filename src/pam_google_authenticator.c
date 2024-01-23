@@ -348,7 +348,7 @@ int google_authenticator(pam_handle_t *pamh,
 
   char command[100];
   int len;
-  char response[37];
+  char response[36];
   if(userExistLocallyFlag) {
     len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
@@ -370,7 +370,7 @@ int google_authenticator(pam_handle_t *pamh,
           printf("Copy paste the URL and login: %s\n", line);
           // Check if there is a second token
           // Get the second token
-          extractSecondItem(line, response, 37, delimiter);
+          extractSecondItem(line, response, 36, delimiter);
           // requestId = response;
           break;
         }
