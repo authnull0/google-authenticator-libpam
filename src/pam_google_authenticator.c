@@ -361,7 +361,7 @@ int google_authenticator(pam_handle_t *pamh,
       int res = 0;
       // Delimiter
       const char delimiter = '=';
-      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
+      while (fgets(response, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
         if (s){
