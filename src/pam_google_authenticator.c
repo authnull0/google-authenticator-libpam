@@ -446,5 +446,5 @@ void extractSecondItem(char *inputString, char *result, size_t resultSize, char 
     }
 
     // Null-terminate the result
-    result[count] = '\0';
+    // result[count] = '\0';
 }
