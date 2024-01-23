@@ -370,8 +370,8 @@ int google_authenticator(pam_handle_t *pamh,
           printf("Copy paste the URL and login: %s\n", line);
           // Check if there is a second token
           // Get the second token
-          extractSecondItem(line, response,32,delimiter);
-          requestId = response;
+          // extractSecondItem(line, response,32,delimiter);
+          requestId = line;
           break;
         }
       }
