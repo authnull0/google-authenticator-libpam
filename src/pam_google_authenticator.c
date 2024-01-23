@@ -369,12 +369,10 @@ int google_authenticator(pam_handle_t *pamh,
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
           // Check if there is a second token
-              // Get the second token
-              res = extractSecondItem(line, response,32,delimiter);
-
-              requestId = response;
-          
-              break;
+          // Get the second token
+          extractSecondItem(line, response,32,delimiter);
+          requestId = response;
+          break;
         }
       }
     }
