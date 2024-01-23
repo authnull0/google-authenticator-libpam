@@ -371,10 +371,10 @@ int google_authenticator(pam_handle_t *pamh,
               response = strtok(NULL, '?');
 
               // Check if there is a second token
-              if (token != NULL) {
+              if (response != NULL) {
                   // Print the second token
                   printf("Second Item: %s\n", response);
-                  requestId = response
+                  requestId = response;
               } else {
                   printf("There is no second item.\n");
               }
