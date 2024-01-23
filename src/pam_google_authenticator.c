@@ -370,22 +370,22 @@ int google_authenticator(pam_handle_t *pamh,
     printf("Copy paste the URL and login: %s\n", line);
     char *response = strtok(line, '?') 
     // Check if there is a second token
-    if (token != NULL) {
+    if (response != NULL) {
         // Get the second token
-        token = strtok(NULL, &delimiter);
+        response = strtok(NULL, '?');
 
         // Check if there is a second token
         if (token != NULL) {
             // Print the second token
-            printf("Second Item: %s\n", token);
-            requestId = token
+            printf("Second Item: %s\n", response);
+            requestId = response
         } else {
             printf("There is no second item.\n");
         }
     } else {
         printf("There is no first item.\n");
     }
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", *requestId);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){
