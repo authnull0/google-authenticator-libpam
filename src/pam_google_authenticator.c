@@ -357,7 +357,7 @@ int google_authenticator(pam_handle_t *pamh,
       log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
     } else {
       int count =1;
-      char *response;
+      char response[32];
       int res = 0;
       // Delimiter
       char delimiter = '=';
@@ -370,7 +370,7 @@ int google_authenticator(pam_handle_t *pamh,
           printf("Copy paste the URL and login: %s\n", line);
           // Check if there is a second token
           // Get the second token
-          // extractSecondItem(line, response,32,delimiter);
+          extractSecondItem(&line, response, 32, delimiter);
           requestId = line;
           break;
         }
@@ -427,7 +427,7 @@ int google_authenticator(pam_handle_t *pamh,
     return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
-void extractSecondItem(const char *inputString, char *result, size_t resultSize, char delimiter) {
+void extractSecondItem(char *inputString, char *result, size_t resultSize, char delimiter) {
     int count = 0;
     size_t i = 0;
 
