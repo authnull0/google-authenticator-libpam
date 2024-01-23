@@ -371,16 +371,16 @@ int google_authenticator(pam_handle_t *pamh,
           // Check if there is a second token
           // Get the second token
           extractSecondItem(line, response, 37, delimiter);
+          
           printf("Second Item : %s\n", response);
+          requestId = response;
           // requestId = response;
           break;
         }
       }
     }
-    char convertedString[36];
-    strcpy(convertedString, response);
 
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", convertedString);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", *requestId);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){
