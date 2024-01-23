@@ -371,7 +371,7 @@ int google_authenticator(pam_handle_t *pamh,
           // Check if there is a second token
           // Get the second token
           extractSecondItem(line, response, 32, delimiter);
-          requestId = line;
+          requestId = response;
           break;
         }
       }
@@ -436,7 +436,7 @@ void extractSecondItem(char *inputString, char *result, size_t resultSize, char 
         i++;
     }
     printf("extractSecondItem i is %d\n", i);
-    i++;
+    
     // Copy characters to the result until the second delimiter is found or the end of the string
     while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize - 1) {
         printf("Char Result %c\n", inputString[i]);
