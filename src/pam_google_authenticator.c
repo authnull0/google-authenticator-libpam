@@ -361,7 +361,7 @@ int google_authenticator(pam_handle_t *pamh,
       int res = 0;
       // Delimiter
       const char delimiter = '=';
-      while (fgets(response, LINE_BUFSIZE-1, output) != NULL){
+      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
         if (s){
@@ -371,9 +371,9 @@ int google_authenticator(pam_handle_t *pamh,
           if (response != NULL) {
               char **arr = NULL;
               // Get the second token
-              res = split(line, '=',&arr);
+              res = extractSecondItem(line, response,32,delimiter);
 
-              requestId = arr[1];
+              requestId = response;
           } else {
               printf("There is no first item.\n");
           }
@@ -432,63 +432,22 @@ int google_authenticator(pam_handle_t *pamh,
     return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
-int split (const char *str, char c, char ***arr)
-{
-    int count = 1;
-    int token_len = 1;
-    int i = 0;
-    char *p;
-    char *t;
+void extractSecondItem(const char *inputString, char *result, size_t resultSize, char delimiter) {
+    int count = 0;
+    size_t i = 0;
 
-    p = str;
-    while (*p != '\0')
-    {
-        if (*p == c)
-            count++;
-        p++;
+    // Skip characters until the first delimiter is found
+    while (inputString[i] != '\0' && inputString[i] != delimiter) {
+        i++;
     }
 
-    *arr = (char**) malloc(sizeof(char*) * count);
-    if (*arr == NULL)
-        exit(1);
-
-    p = str;
-    while (*p != '\0')
-    {
-        if (*p == c)
-        {
-            (*arr)[i] = (char*) malloc( sizeof(char) * token_len );
-            if ((*arr)[i] == NULL)
-                exit(1);
-
-            token_len = 0;
-            i++;
-        }
-        p++;
-        token_len++;
-    }
-    (*arr)[i] = (char*) malloc( sizeof(char) * token_len );
-    if ((*arr)[i] == NULL)
-        exit(1);
-
-    i = 0;
-    p = str;
-    t = ((*arr)[i]);
-    while (*p != '\0')
-    {
-        if (*p != c && *p != '\0')
-        {
-            *t = *p;
-            t++;
-        }
-        else
-        {
-            *t = '\0';
-            i++;
-            t = ((*arr)[i]);
-        }
-        p++;
+    // Copy characters to the result until the second delimiter is found or the end of the string
+    while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize - 1) {
+        result[count] = inputString[i];
+        count++;
+        i++;
     }
 
-    return count;
+    // Null-terminate the result
+    result[count] = '\0';
 }
