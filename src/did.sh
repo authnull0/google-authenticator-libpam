@@ -62,7 +62,7 @@ SSO=$(echo "$RES" | jq -r '.ssoUrl')
 requestId=$(echo "$RES" | jq '.requestId')
 
 if [[ $requestId != "null" ]]; then
-        echo "requestId present in the response"
+        echo "$SSO"
 else
         echo "requestId not present in the response"
 fi

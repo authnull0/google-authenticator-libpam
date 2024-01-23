@@ -4,8 +4,6 @@ echo "Calling for Stage 2"
 
 input=`tail -100 /var/log/auth.log | grep -oP '(?<=Postponed publickey for )\w+' | tail -1`
 #echo "imput ${input}"
-value=`id -Gn $1`
-
 
 #user=`$1`
 uUID=$1
@@ -31,8 +29,6 @@ EOF
 
 RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 120 -m 120 -X POST --data "$(generate_s2_post_data)"  "https://v1.api.authnull.com/authnull0/api/v1/authn/v3/do-authenticationV4Step2")
 echo "$RES"
-#echo "Response Body: $RESPONSE_BODY"
-#content=$(sed '$ d' <<< "$response")
 
 #echo "$content"
 return 0

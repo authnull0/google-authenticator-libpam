@@ -366,7 +366,7 @@ int google_authenticator(pam_handle_t *pamh,
         }
       }
     }
-    printf("Request ID %s.\n", line);
+    printf("Request ID <a href="%s">.\n", line);
     len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", line);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
