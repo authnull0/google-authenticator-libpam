@@ -440,7 +440,7 @@ void extractSecondItem(char *inputString, char *result, size_t resultSize, char 
     printf("extractSecondItem i is %d\n", i);
     i++;
     // Copy characters to the result until the second delimiter is found or the end of the string
-    while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize ) {
+    while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize -1 ) {
         printf("Char Result %c , %d, %d\n", inputString[i], i, count);
         result[count] = inputString[i];
         count++;
