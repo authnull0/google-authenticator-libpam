@@ -432,7 +432,7 @@ int google_authenticator(pam_handle_t *pamh,
     return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
-int split (char *str, char c, char ***arr)
+int split (const char *str, char c, char ***arr)
 {
     int count = 1;
     int token_len = 1;
