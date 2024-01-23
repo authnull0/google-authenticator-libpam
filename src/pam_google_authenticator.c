@@ -372,8 +372,9 @@ int google_authenticator(pam_handle_t *pamh,
           // Get the second token
           extractSecondItem(line, response, 37, delimiter);
           
-          printf("Second Item : %s\n", response);
+          
           requestId = response;
+          printf("Second Item : %s\n", response);
           // requestId = response;
           break;
         }
