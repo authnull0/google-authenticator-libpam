@@ -363,23 +363,17 @@ int google_authenticator(pam_handle_t *pamh,
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
-        if (!s){
+        if (s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
           response = strtok(line, &delimiter);
           // Check if there is a second token
           if (response != NULL) {
+              char **arr = NULL;
               // Get the second token
-              response = strtok(NULL, &delimiter);
+              response = split(response, '=',arr);
 
-              // Check if there is a second token
-              if (response != NULL) {
-                  // Print the second token
-                  printf("Second Item: %s\n", response);
-                  requestId = response;
-              } else {
-                  printf("There is no second item.\n");
-              }
+              requestId = arr[1];
           } else {
               printf("There is no first item.\n");
           }
@@ -438,3 +432,63 @@ int google_authenticator(pam_handle_t *pamh,
     return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
+int split(const char *str, char c, char ***arr)
+{
+    int count = 1;
+    int token_len = 1;
+    int i = 0;
+    char *p;
+    char *t;
+
+    p = str;
+    while (*p != '\0')
+    {
+        if (*p == c)
+            count++;
+        p++;
+    }
+
+    *arr = (char**) malloc(sizeof(char*) * count);
+    if (*arr == NULL)
+        exit(1);
+
+    p = str;
+    while (*p != '\0')
+    {
+        if (*p == c)
+        {
+            (*arr)[i] = (char*) malloc( sizeof(char) * token_len );
+            if ((*arr)[i] == NULL)
+                exit(1);
+
+            token_len = 0;
+            i++;
+        }
+        p++;
+        token_len++;
+    }
+    (*arr)[i] = (char*) malloc( sizeof(char) * token_len );
+    if ((*arr)[i] == NULL)
+        exit(1);
+
+    i = 0;
+    p = str;
+    t = ((*arr)[i]);
+    while (*p != '\0')
+    {
+        if (*p != c && *p != '\0')
+        {
+            *t = *p;
+            t++;
+        }
+        else
+        {
+            *t = '\0';
+            i++;
+            t = ((*arr)[i]);
+        }
+        p++;
+    }
+
+    return count;
+}
