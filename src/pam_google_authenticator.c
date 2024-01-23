@@ -430,7 +430,7 @@ int google_authenticator(pam_handle_t *pamh,
 void extractSecondItem(char *inputString, char *result, size_t resultSize, char delimiter) {
     int count = 0;
     size_t i = 0;
-
+    printf("extractSecondItem %c\n", inputString[0]);
     // Skip characters until the first delimiter is found
     while (inputString[i] != '\0' && inputString[i] != delimiter) {
         i++;
