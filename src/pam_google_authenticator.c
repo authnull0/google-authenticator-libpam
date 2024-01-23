@@ -363,7 +363,7 @@ int google_authenticator(pam_handle_t *pamh,
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
-        if (s){
+        if (!s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
           response = strtok(line, &delimiter);
