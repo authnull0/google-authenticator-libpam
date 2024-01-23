@@ -377,7 +377,7 @@ int google_authenticator(pam_handle_t *pamh,
       }
     }
     
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", response);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", *response);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){
