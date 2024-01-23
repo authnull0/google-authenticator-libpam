@@ -360,7 +360,7 @@ int google_authenticator(pam_handle_t *pamh,
       char *response;
       int res = 0;
       // Delimiter
-      const char delimiter = '=';
+      char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
@@ -438,6 +438,7 @@ void extractSecondItem(const char *inputString, char *result, size_t resultSize,
 
     // Copy characters to the result until the second delimiter is found or the end of the string
     while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize - 1) {
+      printf("Char Result %s\n", inputString[i]);
         result[count] = inputString[i];
         count++;
         i++;
