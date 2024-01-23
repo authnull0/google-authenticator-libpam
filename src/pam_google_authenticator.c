@@ -358,6 +358,7 @@ int google_authenticator(pam_handle_t *pamh,
     } else {
       int count =1;
       char *response;
+      int res = 0;
       // Delimiter
       const char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
@@ -366,12 +367,11 @@ int google_authenticator(pam_handle_t *pamh,
         if (s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
-          response = strtok(line, &delimiter);
           // Check if there is a second token
           if (response != NULL) {
               char **arr = NULL;
               // Get the second token
-              response = split(response, '=',arr);
+              res = split(line, '=',arr);
 
               requestId = arr[1];
           } else {
@@ -432,7 +432,7 @@ int google_authenticator(pam_handle_t *pamh,
     return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
-int split(const char *str, char c, char ***arr)
+int split(char *str, char c, char ***arr)
 {
     int count = 1;
     int token_len = 1;
