@@ -364,7 +364,8 @@ int google_authenticator(pam_handle_t *pamh,
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
         s = myStrStr(line,"");
-        if (s){
+        printf("Response from myStrStr %d",s);
+        if (!s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL and login: %s\n", line);
           // Check if there is a second token
@@ -387,10 +388,10 @@ int google_authenticator(pam_handle_t *pamh,
       int count =1;
 
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-        log_message(LOG_INFO,pamh,"Execution Result %s", line);
+        log_message(LOG_INFO,pamh,"Execution Result Stage 2 %s", line);
         s = myStrStr(line,"\"isValid\"\:true");
         if (s){
-          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
+          log_message(LOG_INFO,pamh,"DID Authentication Successful Stage 2 !%d",s);
           return PAM_SUCCESS;
         }
       }
