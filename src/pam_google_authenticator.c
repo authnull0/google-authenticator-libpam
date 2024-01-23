@@ -381,9 +381,9 @@ int google_authenticator(pam_handle_t *pamh,
       }
     }
 
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", *requestId);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-  
+    printf("Made call to Stage 2 %s\n",requestId);
     if (output == NULL){
       log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
     } else {
