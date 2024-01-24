@@ -369,7 +369,7 @@ int google_authenticator(pam_handle_t *pamh,
       char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        if(len(line) == 1) {
+        if(strlen(line) == 1) {
           break;
         }
         res = myStrStr(line,"*");
