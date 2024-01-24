@@ -235,7 +235,7 @@ int myStrStr(char* str, char* sub)
     len2 = strlen(sub);
 
     if (len1 ==0) {
-      return flag;
+      return 1;
     }
     while (str[i] != '\0') {
         if (str[i] == sub[0]) {
