@@ -234,6 +234,7 @@ int myStrStr(char* str, char* sub)
     len1 = strlen(str);
     len2 = strlen(sub);
 
+    printf("len1 %d, len2 %d\n", len1, len2);
     if (len1 ==0) {
       return 1;
     }
