@@ -407,7 +407,7 @@ int google_authenticator(pam_handle_t *pamh,
             }
           }
         }
-        pclose(output);
+        // pclose(output);
       }
 
     }
