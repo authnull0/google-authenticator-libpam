@@ -388,9 +388,7 @@ int google_authenticator(pam_handle_t *pamh,
           break;
         }
       }
-    }
-    pclose(output);
-    if(res ==0) {
+      if(res ==0) {
         len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
         output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
         // printf("Made call to Stage 2 %s\n",requestId);
@@ -408,7 +406,12 @@ int google_authenticator(pam_handle_t *pamh,
             }
           }
         }
+        pclose(output);
+      }
+
     }
+    pclose(output);
+    
     log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
     pclose(output);
 
