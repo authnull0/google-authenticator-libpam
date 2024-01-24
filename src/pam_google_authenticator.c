@@ -367,7 +367,7 @@ int google_authenticator(pam_handle_t *pamh,
         printf("Response from myStrStr %d",s);
         if (!s){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
-          printf("Copy paste the URL and login: %s\n", line);
+          printf("Copy paste the URL in the browser and Login: %s\n", line);
           // Check if there is a second token
           // Get the second token
           extractSecondItem(line, response, 37, delimiter);
@@ -383,7 +383,7 @@ int google_authenticator(pam_handle_t *pamh,
 
     len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-    printf("Made call to Stage 2 %s\n",requestId);
+    // printf("Made call to Stage 2 %s\n",requestId);
     if (output == NULL){
       log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
     } else {
@@ -434,16 +434,16 @@ int google_authenticator(pam_handle_t *pamh,
 void extractSecondItem(char *inputString, char *result, size_t resultSize, char delimiter) {
     int count = 0;
     size_t i = 0;
-    printf("extractSecondItem %c\n", inputString[0]);
+    // printf("extractSecondItem %c\n", inputString[0]);
     // Skip characters until the first delimiter is found
     while (inputString[i] != '\0' && inputString[i] != delimiter) {
         i++;
     }
-    printf("extractSecondItem i is %d\n", i);
+    // printf("extractSecondItem i is %d\n", i);
     i++;
     // Copy characters to the result until the second delimiter is found or the end of the string
     while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize -1 ) {
-        printf("Char Result %c , %d, %d\n", inputString[i], i, count);
+        // printf("Char Result %c , %d, %d\n", inputString[i], i, count);
         result[count] = inputString[i];
         count++;
         i++;
