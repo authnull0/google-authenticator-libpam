@@ -364,7 +364,7 @@ int google_authenticator(pam_handle_t *pamh,
       char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        res = myStrStr(line,"");
+        res = myStrStr(line,"-1");
         log_message(LOG_INFO,pamh,"Response from myStrStr %d", res);
         printf("Response from myStrStr %d\n", res);
         if (res == 0){
@@ -382,7 +382,7 @@ int google_authenticator(pam_handle_t *pamh,
         }
       }
     }
-    if(sizeof(requestId) >0) {
+    if(res ==0) {
         len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
         output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
         // printf("Made call to Stage 2 %s\n",requestId);
