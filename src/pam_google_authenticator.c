@@ -237,9 +237,7 @@ int myStrStr(char* str, char* sub)
     printf("len1 %d, len2 %d\n", len1, len2);
     printf("str : %c\n", str[0]);
     printf("sub : %c\n", sub[0]);
-    if (len1 ==0) {
-      return 1;
-    }
+    
     while (str[i] != '\0') {
 
         if (str[i] == sub[0]) {
@@ -357,7 +355,7 @@ int google_authenticator(pam_handle_t *pamh,
   int len;
   char response[37];
   
-  int res = 0;
+  int res = 1;
   if(userExistLocallyFlag) {
     len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
@@ -371,6 +369,9 @@ int google_authenticator(pam_handle_t *pamh,
       char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
+        if(len(line) == 1) {
+          break;
+        }
         res = myStrStr(line,"*");
         log_message(LOG_INFO,pamh,"Response from myStrStr %d", res);
         printf("Response from myStrStr %d\n", res);
