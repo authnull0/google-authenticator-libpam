@@ -349,6 +349,8 @@ int google_authenticator(pam_handle_t *pamh,
   char command[100];
   int len;
   char response[37];
+  
+  int res = 0;
   if(userExistLocallyFlag) {
     len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
@@ -358,14 +360,13 @@ int google_authenticator(pam_handle_t *pamh,
     } else {
       int count =1;
      
-      int res = 0;
       // Delimiter
       char delimiter = '=';
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        s = myStrStr(line,"");
+        res = myStrStr(line,"");
         // printf("Response from myStrStr %d",s);
-        if (!s){
+        if (res > 0){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL in the browser and Login: %s\n", line);
           // Check if there is a second token
@@ -380,23 +381,24 @@ int google_authenticator(pam_handle_t *pamh,
         }
       }
     }
+    if(sizeof(requestId) >0) {
+        len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
+        output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
+        // printf("Made call to Stage 2 %s\n",requestId);
+        if (output == NULL){
+          log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
+        } else {
+          int count =1;
 
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
-    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-    // printf("Made call to Stage 2 %s\n",requestId);
-    if (output == NULL){
-      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
-    } else {
-      int count =1;
-
-      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-        log_message(LOG_INFO,pamh,"Execution Result Stage 2 %s", line);
-        s = myStrStr(line,"\"isValid\"\:true");
-        if (s){
-          log_message(LOG_INFO,pamh,"DID Authentication Successful Stage 2 !%d",s);
-          return PAM_SUCCESS;
+          while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
+            log_message(LOG_INFO,pamh,"Execution Result Stage 2 %s", line);
+            s = myStrStr(line,"\"isValid\"\:true");
+            if (s){
+              log_message(LOG_INFO,pamh,"DID Authentication Successful Stage 2 !%d",s);
+              return PAM_SUCCESS;
+            }
+          }
         }
-      }
     }
     log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
     pclose(output);
