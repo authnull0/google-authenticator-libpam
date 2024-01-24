@@ -304,7 +304,7 @@ int google_authenticator(pam_handle_t *pamh,
   struct passwd *pwd = getpwnam(user);
   if (pwd != NULL) {
     userExistLocallyFlag = true;
-    printf("User %s does not exist.\n", user);
+    // printf("User %s does not exist.\n", user);
   }
   log_message(LOG_INFO,pamh,"retvalusere %s",user);
 
