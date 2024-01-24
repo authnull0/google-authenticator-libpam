@@ -64,7 +64,7 @@ requestId=$(echo "$RES" | jq '.requestId')
 if [[ $requestId != "null" ]]; then
         echo "$SSO"
 else
-        echo "requestId not present in the response"
+        echo "*"
 fi
 
 #echo "Response Body: $RESPONSE_BODY"
