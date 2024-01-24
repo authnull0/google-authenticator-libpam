@@ -414,7 +414,7 @@ int google_authenticator(pam_handle_t *pamh,
     pclose(output);
     
     log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
-    pclose(output);
+    // pclose(output);
 
     log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
     
