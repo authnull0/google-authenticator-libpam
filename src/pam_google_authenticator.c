@@ -235,10 +235,13 @@ int myStrStr(char* str, char* sub)
     len2 = strlen(sub);
 
     printf("len1 %d, len2 %d\n", len1, len2);
+    printf("str : %c\n", str[0]);
+    printf("sub : %c\n", sub[0]);
     if (len1 ==0) {
       return 1;
     }
     while (str[i] != '\0') {
+
         if (str[i] == sub[0]) {
             if ((i + len2) > len1)
                 break;
