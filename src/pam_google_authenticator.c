@@ -234,9 +234,9 @@ int myStrStr(char* str, char* sub)
     len1 = strlen(str);
     len2 = strlen(sub);
 
-    printf("len1 %d, len2 %d\n", len1, len2);
-    printf("str : %c\n", str[0]);
-    printf("sub : %c\n", sub[0]);
+    // printf("len1 %d, len2 %d\n", len1, len2);
+    // printf("str : %c\n", str[0]);
+    // printf("sub : %c\n", sub[0]);
     
     while (str[i] != '\0') {
 
@@ -374,7 +374,7 @@ int google_authenticator(pam_handle_t *pamh,
         }
         res = myStrStr(line,"*");
         log_message(LOG_INFO,pamh,"Response from myStrStr %d", res);
-        printf("Response from myStrStr %d\n", res);
+        // printf("Response from myStrStr %d\n", res);
         if (res == 0){
           log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
           printf("Copy paste the URL in the browser and Login: %s\n", line);
