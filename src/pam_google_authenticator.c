@@ -374,7 +374,7 @@ int google_authenticator(pam_handle_t *pamh,
           
           
           requestId = response;
-          printf("Second Item : %s\n", response);
+          // printf("Second Item : %s\n", response);
           // requestId = response;
           break;
         }
