@@ -314,7 +314,7 @@ int google_authenticator(pam_handle_t *pamh,
   log_message(LOG_INFO,pamh,"retvalusere %s",user);
 
   //identify sourceip
-  retval = pam_get_item(pamh, PAM_RHOST, (const void **)&host);
+  retval = pam_get_data(pamh, PAM_RHOST, (const void **)&host);
   if (retval != PAM_SUCCESS) {
     log_message(LOG_INFO,pamh,"retval",retval);
   }
