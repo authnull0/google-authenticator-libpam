@@ -139,31 +139,6 @@ move_fd_to_non_stdio (pam_handle_t *pamh, int fd)
   return fd;
 }
 
-char *get_last_ip_address() {
-    FILE *file = fopen(LOG_FILE_PATH, "r");
-    if (!file) {
-        return NULL;
-    }
-  int linenr = 0;
-    char *last_ip = NULL;
-    char line[LINE_BUFSIZE];
-
-    while (fgets(line, sizeof(line), file)) {
-      linenr++;
-        char *prefix = "PAM_RHOST=";
-        if (strncmp(line, prefix, strlen(prefix)) == 0) {
-            free(last_ip);
-            last_ip = strdup(line + strlen(prefix));
-            // Remove newline character from the end
-            last_ip[strcspn(last_ip, "\n")] = '\0';
-           // Log the extracted IP address
-            log_message(LOG_INFO, NULL, "Extracted IP from line %d: %s", linenr, last_ip);
-        }
-    }
-
-    fclose(file);
-    return last_ip;
-}
 
 
 static void log_message(int priority, pam_handle_t *pamh,
@@ -281,6 +256,33 @@ int myStrStr(char* str, char* sub)
 
     return flag;
 }
+
+char *get_last_ip_address() {
+    FILE *file = fopen(LOG_FILE_PATH, "r");
+    if (!file) {
+        return NULL;
+    }
+  int linenr = 0;
+    char *last_ip = NULL;
+    char line[LINE_BUFSIZE];
+
+    while (fgets(line, sizeof(line), file)) {
+      linenr++;
+        char *prefix = "PAM_RHOST=";
+        if (strncmp(line, prefix, strlen(prefix)) == 0) {
+            free(last_ip);
+            last_ip = strdup(line + strlen(prefix));
+            // Remove newline character from the end
+            last_ip[strcspn(last_ip, "\n")] = '\0';
+           // Log the extracted IP address
+            log_message(LOG_INFO, NULL, "Extracted IP from line %d: %s", linenr, last_ip);
+        }
+    }
+
+    fclose(file);
+    return last_ip;
+}
+
 
 
 
