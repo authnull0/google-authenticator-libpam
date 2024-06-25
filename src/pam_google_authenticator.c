@@ -142,25 +142,37 @@ move_fd_to_non_stdio (pam_handle_t *pamh, int fd)
 char *get_last_ip_address() {
     FILE *file = fopen(LOG_FILE_PATH, "r");
     if (!file) {
+        log_message(LOG_ERR, NULL, "Failed to open log file %s", LOG_FILE_PATH);
         return NULL;
     }
 
     char *last_ip = NULL;
     char line[LINE_BUFSIZE];
+    int linenr = 0;
 
     while (fgets(line, sizeof(line), file)) {
+        linenr++;
         char *prefix = "PAM_RHOST=";
         if (strncmp(line, prefix, strlen(prefix)) == 0) {
             free(last_ip);
             last_ip = strdup(line + strlen(prefix));
+            if (last_ip == NULL) {
+                log_message(LOG_ERR, NULL, "Failed to allocate memory for last_ip");
+                fclose(file);
+                return NULL;
+            }
             // Remove newline character from the end
             last_ip[strcspn(last_ip, "\n")] = '\0';
+
+            // Log the extracted IP address
+            log_message(LOG_INFO, NULL, "Extracted IP from line %d: %s", linenr, last_ip);
         }
     }
 
     fclose(file);
     return last_ip;
 }
+
 
 
 static void log_message(int priority, pam_handle_t *pamh,
