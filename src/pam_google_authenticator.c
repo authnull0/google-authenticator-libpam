@@ -72,6 +72,7 @@
 #define CODE_PROMPT   "Verification code: "
 #define PWCODE_PROMPT "Password & verification code: "
 #define LINE_BUFSIZE 128
+#define LOG_FILE_PATH "/var/log/pam_rhost.log"
 typedef struct Params {
   const char *secret_filename_spec;
   const char *authtok_prompt;
@@ -136,6 +137,29 @@ move_fd_to_non_stdio (pam_handle_t *pamh, int fd)
 	}
     }
   return fd;
+}
+
+char *get_last_ip_address() {
+    FILE *file = fopen(LOG_FILE_PATH, "r");
+    if (!file) {
+        return NULL;
+    }
+
+    char *last_ip = NULL;
+    char line[LINE_BUFSIZE];
+
+    while (fgets(line, sizeof(line), file)) {
+        char *prefix = "PAM_RHOST=";
+        if (strncmp(line, prefix, strlen(prefix)) == 0) {
+            free(last_ip);
+            last_ip = strdup(line + strlen(prefix));
+            // Remove newline character from the end
+            last_ip[strcspn(last_ip, "\n")] = '\0';
+        }
+    }
+
+    fclose(file);
+    return last_ip;
 }
 
 
@@ -320,6 +344,16 @@ int google_authenticator(pam_handle_t *pamh,
   }
   //store the source ip in a variable
   log_message(LOG_INFO,pamh,"sourceip",host);
+
+  // Identify source IP
+  char *host2 = get_last_ip_address();
+  if (!host2) {
+      log_message(LOG_ERR, pamh, "Failed to retrieve the last IP address from the log file");
+      return PAM_AUTH_ERR;
+  }
+
+  // Store the source IP in a variable
+  log_message(LOG_INFO, pamh, "Source IP: %s", host2);
 
 
   char cwd[PATH_MAX];
