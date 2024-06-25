@@ -300,7 +300,7 @@ int google_authenticator(pam_handle_t *pamh,
   int retval;
   //const char *user = getUserName(uid);
   /* identify user */
-  bool userExistLocallyFlag = false;
+  bool userExistLocallyFlag = true;
   retval = pam_get_user(pamh, &user, NULL);
   if (retval != PAM_SUCCESS) {
     log_message(LOG_INFO,pamh,"retval",retval);
