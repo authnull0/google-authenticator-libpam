@@ -404,7 +404,7 @@ int google_authenticator(pam_handle_t *pamh,
   
   int res = 1;
   if(userExistLocallyFlag) {
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s",user);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s",user,host2);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){
