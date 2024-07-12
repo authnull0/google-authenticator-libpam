@@ -396,6 +396,6 @@ int google_authenticator(pam_handle_t *pamh,
     
   }
     
-    return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
+    return PAM_AUTH_ERR;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
 }
 
