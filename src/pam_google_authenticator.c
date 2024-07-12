@@ -411,57 +411,18 @@ int google_authenticator(pam_handle_t *pamh,
       log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
     } else {
       int count =1;
-     
-      // Delimiter
-      char delimiter = '=';
+
       while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
         log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        if(strlen(line) == 1) {
-          break;
-        }
-        res = myStrStr(line,"*");
-        log_message(LOG_INFO,pamh,"Response from myStrStr %d", res);
-        // printf("Response from myStrStr %d\n", res);
-        if (res == 0){
-          log_message(LOG_INFO,pamh,"Authentication First Stage Successful !%d",s);
-          printf("Copy paste the URL in the browser and Login: %s\n", line);
-          // Check if there is a second token
-          // Get the second token
-          extractSecondItem(line, response, 37, delimiter);
-          
-          
-          requestId = response;
-          // printf("Second Item : %s\n", response);
-          // requestId = response;
-          break;
+        s = myStrStr(line,"\"isValid\"\:true");
+        if (s){
+          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
+          return PAM_SUCCESS;
         }
       }
-      if(res ==0) {
-        len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did-2.sh %s", requestId);
-        output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-        // printf("Made call to Stage 2 %s\n",requestId);
-        if (output == NULL){
-          log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
-        } else {
-          int count =1;
-
-          while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-            log_message(LOG_INFO,pamh,"Execution Result Stage 2 %s", line);
-            s = myStrStr(line,"\"isValid\"\:true");
-            if (s){
-              log_message(LOG_INFO,pamh,"DID Authentication Successful Stage 2 !%d",s);
-              return PAM_SUCCESS;
-            }
-          }
-        }
-        // pclose(output);
-      }
-
     }
-    pclose(output);
-    
     log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
-    // pclose(output);
+    pclose(output);
 
     log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
     
