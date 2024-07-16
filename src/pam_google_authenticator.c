@@ -329,7 +329,7 @@ int google_authenticator(pam_handle_t *pamh,
   int retval;
   //const char *user = getUserName(uid);
   /* identify user */
-  bool userExistLocallyFlag = true;
+  bool userExistLocallyFlag = false;
   retval = pam_get_user(pamh, &user, NULL);
   if (retval != PAM_SUCCESS) {
     log_message(LOG_INFO,pamh,"retval",retval);
@@ -404,7 +404,7 @@ int google_authenticator(pam_handle_t *pamh,
   
   int res = 1;
   if(userExistLocallyFlag) {
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s",user,host2);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/dit.sh %s %s",user,host2);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){

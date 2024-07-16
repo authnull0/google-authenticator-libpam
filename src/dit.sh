@@ -55,7 +55,7 @@ echo $(generate_post_data)
 echo "Script executed from: ${PWD}"
 echo "First arg is $1"
 
-RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 50 -m 50 -X POST --data "$(generate_post_data)"  "https://prod.api.authnull.com/authnull0/api/v1/authn/v3/do-authenticationV4")
+RES=$(curl -H "Accept: application/json" -H "Content-Type:application/json" --connect-timeout 50 -m 50 -X POST --data "$(generate_post_data)"  "https://prod.api.authnull.com/authnull0/api/v1/authn/v3/do-authorizev1")
 SSO=$(echo "$RES" | jq -r '.ssoUrl')
 requestId=$(echo "$RES" | jq '.requestId')
 
