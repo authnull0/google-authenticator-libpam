@@ -26,7 +26,7 @@ echo "User ID: $userId"
 
 # Determine credential type based on user ID range
 if [[ $userId -ge 1 && $userId -le 999 ]]; then
-  credentialType="SERVICEACCOUNT"
+  credentialType="ServiceAccount"
 else
   credentialType="SSH"
 fi
