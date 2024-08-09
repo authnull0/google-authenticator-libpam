@@ -195,6 +195,12 @@ static void log_message(int priority, pam_handle_t *pamh,
 # endif
 #endif
 
+
+typedef struct {
+    char *source_ip;
+    int pid;
+} IpPidInfo;
+
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags UNUSED_ATTR,
                                    int argc, const char **argv) {
 return google_authenticator(pamh, argc, argv);
@@ -282,7 +288,49 @@ char *get_last_ip_address() {
     fclose(file);
     return last_ip;
 }
+IpPidInfo *get_last_ip_and_pid() {
+    FILE *file = fopen(LOG_FILE_PATH, "r");
+    if (!file) {
+        return NULL;
+    }
 
+    IpPidInfo *last_info = NULL;
+    char line[LINE_BUFSIZE];
+
+    while (fgets(line, sizeof(line), file)) {
+        char *ip_prefix = "PAM_RHOST=";
+        char *pid_prefix = "SSH_CONNECTION=";
+
+        if (strncmp(line, ip_prefix, strlen(ip_prefix)) == 0) {
+            // Free the previous info if it exists
+            if (last_info) {
+                free(last_info->source_ip);
+                free(last_info);
+            }
+
+            last_info = malloc(sizeof(IpPidInfo));
+            if (!last_info) {
+                fclose(file);
+                return NULL;
+            }
+
+            last_info->source_ip = strdup(line + strlen(ip_prefix));
+            last_info->source_ip[strcspn(last_info->source_ip, "\n")] = '\0'; // Remove newline
+
+            // Find the PID from the same line (assuming it's in the same log entry)
+            char *pid_start = strstr(line, pid_prefix);
+            if (pid_start) {
+                pid_start += strlen(pid_prefix);
+                last_info->pid = atoi(pid_start);
+            } else {
+                last_info->pid = -1; // Indicate PID not found
+            }
+        }
+    }
+
+    fclose(file);
+    return last_info;
+}
 
 
 
@@ -351,14 +399,15 @@ int google_authenticator(pam_handle_t *pamh,
   log_message(LOG_INFO,pamh,"sourceip",host);
 
   // Identify source IP
-  char *host2 = get_last_ip_address();
-  if (!host2) {
-      log_message(LOG_ERR, pamh, "Failed to retrieve the last IP address from the log file");
-      return PAM_AUTH_ERR;
-  }
+    // Identify source IP and PID
+    IpPidInfo *info = get_last_ip_and_pid();
+    if (!info) {
+        log_message(LOG_ERR, pamh, "Failed to retrieve the last IP and PID from the log file");
+        return PAM_AUTH_ERR;
+    }
 
   // Store the source IP in a variable
-  log_message(LOG_INFO, pamh, "Source IP: %s", host2);
+  log_message(LOG_INFO, pamh, "Source IP and Pid :", info->source_ip, info->pid);
 
 
   char cwd[PATH_MAX];
@@ -404,7 +453,7 @@ int google_authenticator(pam_handle_t *pamh,
   
   int res = 1;
   if(userExistLocallyFlag) {
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s",user,host2);
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s",user,info->source_ip,info->pid);
     output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
   
     if (output == NULL){

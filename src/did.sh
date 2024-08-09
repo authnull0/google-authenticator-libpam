@@ -7,6 +7,7 @@ source_ip=$2
 
 echo "User: $user"
 echo "Source IP: $source_ip"
+echo "Port: $3"
 
 string=$(groups $USER)
 prefix="$USER : "
