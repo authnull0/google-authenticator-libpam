@@ -13,7 +13,7 @@ string=$(groups $USER)
 prefix="$USER : "
 groupsStr=${string#"$prefix"}
 
-hoststr=$ip_address
+hoststr=$(hostname -f)
 prefixhost="Static hostname: "
 hostname=${hoststr#"$prefixhost"}
 
