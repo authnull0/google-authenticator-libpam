@@ -95,29 +95,26 @@ else
   echo "*"
 fi
 
-
-#Get the permissions and update in sudoers
-conditions = $(echo "$RES" | jq -r '.dit.conditions')
-echo "Conditions: $conditions"
-
-
-permissions = $(echo "$RES" | jq -r '.dit.permissions')
-echo "Permissions: $permissions"
-
-#Parse the permissions to get the allowed commands
-allowed_commands = $(echo "$permissions" | jq -r '.[0]..allowed_sudo_commands')
+#Get the allowed_sudo_commands from the response
+allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[1].allowed_sudo_commands')
 echo "Allowed Commands: $allowed_commands"
 
-# Convert the allowed commands to full paths
-full_path_commands=$(echo "$allowed_commands" | sed 's/ls/\/bin\/ls/g; s/cat/\/bin\/cat/g; s/mv/\/bin\/mv/g')
-echo "Full Path Commands: $full_path_commands"
+#Convert the allowed_commands to full path like /bin/ls,/bin/cat
+IFS=',' read -r -a array <<< "$allowed_commands"
+for element in "${array[@]}"
+do
+  echo "$element"
+  full_path=$(which $element)
+  echo "Full Path: $full_path"
+done
 
+#Update the allowed_commands with full path in sudoers file for the user
+echo "$user ALL=(ALL) $full_path" >> /etc/sudoers
+echo "User $user has been added to sudoers file with allowed commands"
 
-#Update the sudoers file for the user
-echo "$user ALL=(ALL) $full_path_commands" | sudo tee -a /etc/sudoers
+#Check for syntax errors in sudoers file
+visudo -c
 
-# verify the sudoers file for syntax errors
-sudo visudo -c
 
 
 
