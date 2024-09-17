@@ -96,8 +96,14 @@ else
 fi
 
 #Get the allowed_sudo_commands from the response
-allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[1].allowed_sudo_commands')
+allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[0].allowed_sudo_commands')
 echo "Allowed Commands: $allowed_commands"
+
+# Check if allowed_commands is empty
+if [ -z "$allowed_commands" ]; then
+  echo "No allowed commands found."
+  exit 1
+fi
 
 #Convert the allowed_commands to full path like /bin/ls,/bin/cat
 IFS=',' read -r -a array <<< "$allowed_commands"
