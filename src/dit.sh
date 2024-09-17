@@ -96,7 +96,7 @@ else
 fi
 
 #Get the allowed_sudo_commands from the response
-allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[0].allowed_sudo_commands')
+allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[] | select(has("allowed_sudo_commands")) | .allowed_sudo_commands')
 echo "Allowed Commands: $allowed_commands"
 
 # Check if allowed_commands is empty
