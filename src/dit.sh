@@ -75,7 +75,7 @@ generate_post_data() {
   "sourceIp": "$(echo ${source_ip})",
   "ou": "${ou}",
   "adId": "${adId}",
-  "usertype":"${usertype}"
+  "usertype":"AD"
 }
 EOF
 }
