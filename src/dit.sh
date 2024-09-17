@@ -94,7 +94,33 @@ if [[ $requestId != "null" ]]; then
 else
   echo "*"
 fi
-#Get the permissions and update in sudoers 
+
+
+#Get the permissions and update in sudoers
+conditions = $(echo "$RES" | jq -r '.dit.conditions')
+echo "Conditions: $conditions"
+
+
+permissions = $(echo "$RES" | jq -r '.dit.permissions')
+echo "Permissions: $permissions"
+
+#Parse the permissions to get the allowed commands
+allowed_commands = $(echo "$permissions" | jq -r '.[0]..allowed_sudo_commands')
+echo "Allowed Commands: $allowed_commands"
+
+# Convert the allowed commands to full paths
+full_path_commands=$(echo "$allowed_commands" | sed 's/ls/\/bin\/ls/g; s/cat/\/bin\/cat/g; s/mv/\/bin\/mv/g')
+echo "Full Path Commands: $full_path_commands"
+
+
+#Update the sudoers file for the user
+echo "$user ALL=(ALL) $full_path_commands" | sudo tee -a /etc/sudoers
+
+# verify the sudoers file for syntax errors
+sudo visudo -c
+
+
+
 content=$(sed '$ d' <<< "$requestId")
 echo "$RES"
 return 0
