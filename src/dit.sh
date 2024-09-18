@@ -13,7 +13,7 @@ string=$(groups $USER)
 prefix="$USER : "
 groupsStr=${string#"$prefix"}
 
-hoststr=$(hostname -f)
+hoststr=$(hostname)
 prefixhost="Static hostname: "
 hostname=${hoststr#"$prefixhost"}
 
@@ -112,11 +112,11 @@ do
   echo "$element"
   full_path=$(which $element)
   echo "Full Path: $full_path"
+#Update the allowed_commands with full path in sudoers file for the user
+  echo "$user ALL=(ALL) $full_path" >> /etc/sudoers
+  echo "User $user has been added to sudoers file with allowed commands"
 done
 
-#Update the allowed_commands with full path in sudoers file for the user
-echo "$user ALL=(ALL) $full_path" >> /etc/sudoers
-echo "User $user has been added to sudoers file with allowed commands"
 
 #Check for syntax errors in sudoers file
 visudo -c
