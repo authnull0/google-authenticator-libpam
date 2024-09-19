@@ -128,7 +128,7 @@ fi
 
  
 #Get the allowed commands from the response
-allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[0].allowed_sudo_commands | join(",")')
+allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[0].allowed_commands | join(",")')
 echo "Allowed Commands: $allowed_commands"
 
 # Check if allowed_commands is empty
