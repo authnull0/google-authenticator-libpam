@@ -94,9 +94,41 @@ if [[ $requestId != "null" ]]; then
 else
   echo "*"
 fi
+# {
+#   "isValid": false,
+#   "message": "",
+#   "status": "Failure",
+#   "code": 200,
+#   "requestId": "",
+#   "ssoUrl": "",
+#   "stage": 0,
+#   "credential": null,
+#   "dit": {
+#     "conditions": [
+#       {
+#         "ad_user_group": "CN=Domain Admins,CN=Users,DC=authull3,DC=com",
+#         "auth_fail_count": 5,
+#         "trusted_location": "True"
+#       }
+#     ],
+#     "permissions": [
+#       {
+#         "allowed_commands": [
+#           "ls",
+#           "cat"
+#         ],
+#         "login": "Allow"
+#       }
+#     ]
+#   },
+#   "osname": "linux",
+#   "username": ""
+# }
+ 
 
-#Get the allowed_sudo_commands from the response
-allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[] | select(has("allowed_sudo_commands")) | .allowed_sudo_commands')
+ 
+#Get the allowed commands from the response
+allowed_commands=$(echo "$RES" | jq -r '.dit.permissions[0].allowed_sudo_commands | join(",")')
 echo "Allowed Commands: $allowed_commands"
 
 # Check if allowed_commands is empty
@@ -112,7 +144,14 @@ do
   echo "$element"
   full_path=$(which $element)
   echo "Full Path: $full_path"
-#Update the allowed_commands with full path in sudoers file for the user
+  if [ -z "$full_path" ]; then
+    echo "Command $element not found in the system"
+    exit 1
+  fi
+  #Remove the trailing comma
+  full_path=$(echo $full_path | sed 's/,$//')
+  echo "Full Path: $full_path"
+ #Update the allowed_commands with full path in sudoers file for the user
   echo "$user ALL=(ALL) $full_path" >> /etc/sudoers
   echo "User $user has been added to sudoers file with allowed commands"
 done
