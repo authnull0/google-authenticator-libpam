@@ -34,7 +34,7 @@
 
 #include <sys/socket.h> /* socket, connect */
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
-#include <netdb.h> /* struct hostent, gethostbyname */
+#include <netdb.h>      /* struct hostent, gethostbyname */
 #ifdef HAVE_SYS_FSUID_H
 // We much rather prefer to use setfsuid(), but this function is unfortunately
 // not available on all systems.
@@ -56,94 +56,103 @@
 #include <security/pam_ext.h>
 #include <security/_pam_macros.h>
 
-
 #include "base32.h"
 #include "hmac.h"
 #include "sha1.h"
 #include "util.h"
 
-
-
 // Module name shortened to work with rsyslog.
 // See https://github.com/google/google-authenticator-libpam/issues/172
-#define MODULE_NAME   "pam_google_auth"
+#define MODULE_NAME "pam_google_auth"
 
-#define SECRET        "~/.google_authenticator"
-#define CODE_PROMPT   "Verification code: "
+#define SECRET "~/.google_authenticator"
+#define CODE_PROMPT "Verification code: "
 #define PWCODE_PROMPT "Password & verification code: "
 #define LINE_BUFSIZE 128
 #define LOG_FILE_PATH "/var/log/pam_rhost.log"
-typedef struct Params {
+typedef struct Params
+{
   const char *secret_filename_spec;
   const char *authtok_prompt;
-  enum { NULLERR=0, NULLOK, SECRETNOTFOUND } nullok;
-  int        noskewadj;
-  int        echocode;
-  int        fixed_uid;
-  int        no_increment_hotp;
-  uid_t      uid;
-  enum { PROMPT = 0, TRY_FIRST_PASS, USE_FIRST_PASS } pass_mode;
-  int        forward_pass;
-  int        debug;
-  int        no_strict_owner;
-  int        allowed_perm;
-  time_t     grace_period;
-  int        allow_readonly;
+  enum
+  {
+    NULLERR = 0,
+    NULLOK,
+    SECRETNOTFOUND
+  } nullok;
+  int noskewadj;
+  int echocode;
+  int fixed_uid;
+  int no_increment_hotp;
+  uid_t uid;
+  enum
+  {
+    PROMPT = 0,
+    TRY_FIRST_PASS,
+    USE_FIRST_PASS
+  } pass_mode;
+  int forward_pass;
+  int debug;
+  int no_strict_owner;
+  int allowed_perm;
+  time_t grace_period;
+  int allow_readonly;
 } Params;
 
 static char oom;
 
-static const char* nobody = "nobody";
+static const char *nobody = "nobody";
 
 #if defined(DEMO) || defined(TESTING)
-static char* error_msg = NULL;
+static char *error_msg = NULL;
 
 const char *get_error_msg(void) __attribute__((visibility("default")));
-const char *get_error_msg(void) {
-  if (!error_msg) {
+const char *get_error_msg(void)
+{
+  if (!error_msg)
+  {
     return "";
   }
   return error_msg;
 }
 #endif
 
-
-#define ENV_ITEM(n) { (n), #n }
-static struct {
+#define ENV_ITEM(n) {(n), #n}
+static struct
+{
   int item;
   const char *name;
 } env_items[] = {
-  ENV_ITEM(PAM_SERVICE),
-  ENV_ITEM(PAM_USER),
-  ENV_ITEM(PAM_TTY),
-  ENV_ITEM(PAM_RHOST),
-  ENV_ITEM(PAM_RUSER),
+    ENV_ITEM(PAM_SERVICE),
+    ENV_ITEM(PAM_USER),
+    ENV_ITEM(PAM_TTY),
+    ENV_ITEM(PAM_RHOST),
+    ENV_ITEM(PAM_RUSER),
 };
 
 /* move_fd_to_non_stdio copies the given file descriptor to something other
  * than stdin, stdout, or stderr.  Assumes that the caller will close all
  * unwanted fds after calling. */
 static int
-move_fd_to_non_stdio (pam_handle_t *pamh, int fd)
+move_fd_to_non_stdio(pam_handle_t *pamh, int fd)
 {
   while (fd < 3)
+  {
+    fd = dup(fd);
+    if (fd == -1)
     {
-      fd = dup(fd);
-      if (fd == -1)
-	{
-	  int err = errno;
-	  pam_syslog (pamh, LOG_ERR, "dup failed: %m");
-	  _exit (err);
-	}
+      int err = errno;
+      pam_syslog(pamh, LOG_ERR, "dup failed: %m");
+      _exit(err);
     }
+  }
   return fd;
 }
 
-
-
 static void log_message(int priority, pam_handle_t *pamh,
 
-                        const char *format, ...) {
+                        const char *format, ...)
+{
   char *service = NULL;
   if (pamh)
     pam_get_item(pamh, PAM_SERVICE, (void *)&service);
@@ -160,19 +169,23 @@ static void log_message(int priority, pam_handle_t *pamh,
   vsyslog(priority, format, args);
   closelog();
 #else
-  if (!error_msg) {
+  if (!error_msg)
+  {
     error_msg = strdup("");
   }
   {
     char buf[1000];
     vsnprintf(buf, sizeof buf, format, args);
     const int newlen = strlen(error_msg) + 1 + strlen(buf) + 1;
-    char* n = malloc(newlen);
-    if (n) {
-      snprintf(n, newlen, "%s%s%s", error_msg, strlen(error_msg)?"\n":"",buf);
+    char *n = malloc(newlen);
+    if (n)
+    {
+      snprintf(n, newlen, "%s%s%s", error_msg, strlen(error_msg) ? "\n" : "", buf);
       free(error_msg);
       error_msg = n;
-    } else {
+    }
+    else
+    {
       fprintf(stderr, "Failed to malloc %d bytes for log data.\n", newlen);
     }
   }
@@ -180,45 +193,46 @@ static void log_message(int priority, pam_handle_t *pamh,
 
   va_end(args);
 
-  if (priority == LOG_EMERG) {
+  if (priority == LOG_EMERG)
+  {
     // Something really bad happened. There is no way we can proceed safely.
     _exit(1);
   }
 }
 
-
 #ifndef UNUSED_ATTR
-# if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-#  define UNUSED_ATTR __attribute__((__unused__))
-# else
-#  define UNUSED_ATTR
-# endif
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define UNUSED_ATTR __attribute__((__unused__))
+#else
+#define UNUSED_ATTR
+#endif
 #endif
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags UNUSED_ATTR,
-                                   int argc, const char **argv) {
-return google_authenticator(pamh, argc, argv);
-//return call_exec ("auth", pamh, argc, argv);
+                                   int argc, const char **argv)
+{
+  return google_authenticator(pamh, argc, argv);
+  // return call_exec ("auth", pamh, argc, argv);
 }
 
 PAM_EXTERN int
-pam_sm_setcred (pam_handle_t *pamh UNUSED_ATTR,
-                int flags UNUSED_ATTR,
-                int argc UNUSED_ATTR,
-                const char **argv UNUSED_ATTR) {
+pam_sm_setcred(pam_handle_t *pamh UNUSED_ATTR,
+               int flags UNUSED_ATTR,
+               int argc UNUSED_ATTR,
+               const char **argv UNUSED_ATTR)
+{
   return PAM_SUCCESS;
 }
 
 #ifdef PAM_STATC
 struct pam_module _pam_listfile_modstruct = {
-  MODULE_NAME,
-  pam_sm_authenticate,
-  pam_sm_setcred,
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
+    MODULE_NAME,
+    pam_sm_authenticate,
+    pam_sm_setcred,
+    NULL,
+    NULL,
+    NULL,
+    NULL};
 #endif
 /* ---- Emacs Variables ----
  * Local Variables:
@@ -226,87 +240,97 @@ struct pam_module _pam_listfile_modstruct = {
  * indent-tabs-mode: nil
  * End:
  */
-//function definition
-int myStrStr(char* str, char* sub)
+// function definition
+int myStrStr(char *str, char *sub)
 {
-    int flag = 0;
+  int flag = 0;
 
-    int i = 0, len1 = 0, len2 = 0;
+  int i = 0, len1 = 0, len2 = 0;
 
-    len1 = strlen(str);
-    len2 = strlen(sub);
+  len1 = strlen(str);
+  len2 = strlen(sub);
 
-    // printf("len1 %d, len2 %d\n", len1, len2);
-    // printf("str : %c\n", str[0]);
-    // printf("sub : %c\n", sub[0]);
-    
-    while (str[i] != '\0') {
+  // printf("len1 %d, len2 %d\n", len1, len2);
+  // printf("str : %c\n", str[0]);
+  // printf("sub : %c\n", sub[0]);
 
-        if (str[i] == sub[0]) {
-            if ((i + len2) > len1)
-                break;
+  while (str[i] != '\0')
+  {
 
-            if (strncmp(str + i, sub, len2) == 0) {
-                flag = 1;
-                break;
-            }
-        }
-        i++;
+    if (str[i] == sub[0])
+    {
+      if ((i + len2) > len1)
+        break;
+
+      if (strncmp(str + i, sub, len2) == 0)
+      {
+        flag = 1;
+        break;
+      }
     }
+    i++;
+  }
 
-    return flag;
+  return flag;
 }
 
-char *get_last_ip_address() {
-    FILE *file = fopen(LOG_FILE_PATH, "r");
-    if (!file) {
-        return NULL;
-    }
+char *get_last_ip_address()
+{
+  FILE *file = fopen(LOG_FILE_PATH, "r");
+  if (!file)
+  {
+    return NULL;
+  }
   int linenr = 0;
-    char *last_ip = NULL;
-    char line[LINE_BUFSIZE];
+  char *last_ip = NULL;
+  char line[LINE_BUFSIZE];
 
-    while (fgets(line, sizeof(line), file)) {
-      linenr++;
-        char *prefix = "PAM_RHOST=";
-        if (strncmp(line, prefix, strlen(prefix)) == 0) {
-            free(last_ip);
-            last_ip = strdup(line + strlen(prefix));
-            // Remove newline character from the end
-            last_ip[strcspn(last_ip, "\n")] = '\0';
-           // Log the extracted IP address
-            log_message(LOG_INFO, NULL, "Extracted IP from line %d: %s", linenr, last_ip);
-        }
+  while (fgets(line, sizeof(line), file))
+  {
+    linenr++;
+    char *prefix = "PAM_RHOST=";
+    if (strncmp(line, prefix, strlen(prefix)) == 0)
+    {
+      free(last_ip);
+      last_ip = strdup(line + strlen(prefix));
+      // Remove newline character from the end
+      last_ip[strcspn(last_ip, "\n")] = '\0';
+      // Log the extracted IP address
+      log_message(LOG_INFO, NULL, "Extracted IP from line %d: %s", linenr, last_ip);
     }
+  }
 
-    fclose(file);
-    return last_ip;
+  fclose(file);
+  return last_ip;
 }
-
-
-
 
 // return the user name in heap-allocated buffer.
 // Caller frees.
-static const char *getUserName(uid_t uid) {
+static const char *getUserName(uid_t uid)
+{
   struct passwd pwbuf, *pw;
   char *buf;
-  #ifdef _SC_GETPW_R_SIZE_MAX
+#ifdef _SC_GETPW_R_SIZE_MAX
   int len = sysconf(_SC_GETPW_R_SIZE_MAX);
-  if (len <= 0) {
+  if (len <= 0)
+  {
     len = 4096;
   }
-  #else
+#else
   int len = 4096;
-  #endif
+#endif
   buf = malloc(len);
   char *user;
-  if (getpwuid_r(uid, &pwbuf, buf, len, &pw) || !pw) {
+  if (getpwuid_r(uid, &pwbuf, buf, len, &pw) || !pw)
+  {
     user = malloc(32);
     snprintf(user, 32, "%d", uid);
-  } else {
+  }
+  else
+  {
     user = strdup(pw->pw_name);
-    if (!user) {
+    if (!user)
+    {
       perror("malloc()");
       _exit(1);
     }
@@ -316,79 +340,83 @@ static const char *getUserName(uid_t uid) {
 }
 
 int google_authenticator(pam_handle_t *pamh,
- 		int argc, const char **argv) {
-  log_message(LOG_INFO,pamh,"Customized pam to invoke DID ");
-  //const char* const username = get_user_name(pamh, &params);
+                         int argc, const char **argv)
+{
+  log_message(LOG_INFO, pamh, "Customized pam to invoke DID ");
+  // const char* const username = get_user_name(pamh, &params);
   int pam_err;
-    register struct passwd *pw;
-    //register uid_t uid;
+  register struct passwd *pw;
+  // register uid_t uid;
   char *user = NULL;
   char *host = NULL;
   char *service = NULL;
   const uid_t uid = getuid();
   int retval;
-  //const char *user = getUserName(uid);
+  // const char *user = getUserName(uid);
   /* identify user */
   bool userExistLocallyFlag = true;
   retval = pam_get_user(pamh, &user, NULL);
-  if (retval != PAM_SUCCESS) {
-    log_message(LOG_INFO,pamh,"retval",retval);
+  if (retval != PAM_SUCCESS)
+  {
+    log_message(LOG_INFO, pamh, "retval", retval);
   }
 
   struct passwd *pwd = getpwnam(user);
-  if (pwd != NULL) {
+  if (pwd != NULL)
+  {
     userExistLocallyFlag = true;
     // printf("User %s does not exist.\n", user);
   }
-  log_message(LOG_INFO,pamh,"retvalusere %s",user);
+  log_message(LOG_INFO, pamh, "retvalusere %s", user);
 
-  //identify sourceip
+  // identify sourceip
   retval = pam_get_data(pamh, PAM_RHOST, (const void **)&host);
-  if (retval != PAM_SUCCESS) {
-    log_message(LOG_INFO,pamh,"retval",retval);
+  if (retval != PAM_SUCCESS)
+  {
+    log_message(LOG_INFO, pamh, "retval", retval);
   }
-  //store the source ip in a variable
-  log_message(LOG_INFO,pamh,"sourceip",host);
+  // store the source ip in a variable
+  log_message(LOG_INFO, pamh, "sourceip", host);
 
   // Identify source IP
   char *host2 = get_last_ip_address();
-  if (!host2) {
-      log_message(LOG_ERR, pamh, "Failed to retrieve the last IP address from the log file");
-      return PAM_AUTH_ERR;
+  if (!host2)
+  {
+    log_message(LOG_ERR, pamh, "Failed to retrieve the last IP address from the log file");
+    return PAM_AUTH_ERR;
   }
 
   // Store the source IP in a variable
   log_message(LOG_INFO, pamh, "Source IP: %s", host2);
 
-
   char cwd[PATH_MAX];
-  if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    log_message(LOG_INFO,pamh,"Current working dir: %s\n", cwd);
+  if (getcwd(cwd, sizeof(cwd)) != NULL)
+  {
+    log_message(LOG_INFO, pamh, "Current working dir: %s\n", cwd);
   }
 
+  // CURL *curl;
+  //  CURLcode res;
+  // char url[]= "https://api.did.kloudlearn.com/authnull0/api/v1/authn/do-authentication";
+  // char postData[] = "username=newuser&password=newpasswd&msg=test&msisdn=9999999999&tagname=Demo&shortcode=8888&telcoId=5&dnRequired=false";
+  // char* jsonObj = "{ \"username\" : \'user\' , \"responseType\" : \"ssh\" }";
 
-//CURL *curl;
- // CURLcode res;
-  //char url[]= "https://api.did.kloudlearn.com/authnull0/api/v1/authn/do-authentication";
-  //char postData[] = "username=newuser&password=newpasswd&msg=test&msisdn=9999999999&tagname=Demo&shortcode=8888&telcoId=5&dnRequired=false";
-  //char* jsonObj = "{ \"username\" : \'user\' , \"responseType\" : \"ssh\" }";
-  
-//log_message(LOG_INFO,pamh,"curl req to be sent",jsonObj);
-  //struct curl_slist *headers = NULL;
-    //curl_slist_append(headers, "Accept: application/json");
-    //curl_slist_append(headers, "Content-Type: application/json");
-    //curl_slist_append(headers, "charset: utf-8");
+  // log_message(LOG_INFO,pamh,"curl req to be sent",jsonObj);
+  // struct curl_slist *headers = NULL;
+  // curl_slist_append(headers, "Accept: application/json");
+  // curl_slist_append(headers, "Content-Type: application/json");
+  // curl_slist_append(headers, "charset: utf-8");
 
-  //curl = curl_easy_init();
-  //if(curl) {
-   // curl_easy_setopt(curl, CURLOPT_URL, url);
-    //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    //curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonObj);
-   //curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT,50);
-   // res = curl_easy_perform(curl);
-    
-   // log_message(LOG_INFO,pamh,"Invoking lib curl fetching the resp",res);
-   // curl_easy_cleanup(curl);
+  // curl = curl_easy_init();
+  // if(curl) {
+  //  curl_easy_setopt(curl, CURLOPT_URL, url);
+  // curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+  // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonObj);
+  // curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT,50);
+  //  res = curl_easy_perform(curl);
+
+  // log_message(LOG_INFO,pamh,"Invoking lib curl fetching the resp",res);
+  // curl_easy_cleanup(curl);
 
   //}
   char line[LINE_BUFSIZE];
@@ -396,82 +424,97 @@ int google_authenticator(pam_handle_t *pamh,
   FILE *output;
   char *s;
   char *requestId = NULL;
-  log_message(LOG_INFO,pamh,"Starting DID Assertion");
+  log_message(LOG_INFO, pamh, "Starting DID Assertion");
 
   char command[100];
   int len;
   char response[37];
-  
+
   int res = 1;
-  if(userExistLocallyFlag) {
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s",user,host2);
-    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-  
-    if (output == NULL){
-      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
-    } else {
-      int count =1;
+  if (userExistLocallyFlag)
+  {
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/did.sh %s %s", user, host2);
+    output = popen(command, "r"); // update this location based on user path , and copy the script inside src/ to user path (if reqd)
 
-      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-        log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        s = myStrStr(line,"\"isValid\"\:true");
-        if (s){
-          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
+    if (output == NULL)
+    {
+      log_message(LOG_INFO, pamh, "POPEN: Failed to execute");
+    }
+    else
+    {
+      int count = 1;
+
+      while (fgets(line, LINE_BUFSIZE - 1, output) != NULL)
+      {
+        log_message(LOG_INFO, pamh, "Execution Result %s", line);
+        s = myStrStr(line, "\"isValid\"\:true");
+        if (s)
+        {
+          log_message(LOG_INFO, pamh, "DID Authentication Successful !%d", s);
           return PAM_SUCCESS;
         }
       }
     }
-    log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
+    log_message(LOG_INFO, pamh, "No Credential Retrieved , Authentication Failure");
     pclose(output);
 
-    log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
-    
-  } else {
-    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/fetchUser.sh %s",user);
-    output =popen(command, "r");// update this location based on user path , and copy the script inside src/ to user path (if reqd)
-  
-    if (output == NULL){
-      log_message(LOG_INFO,pamh,"POPEN: Failed to execute");
-    } else {
-      int count =1;
-
-      while (fgets(line, LINE_BUFSIZE-1, output) != NULL){
-        log_message(LOG_INFO,pamh,"Execution Result %s", line);
-        s = myStrStr(line, user);
-        if (s){
-          log_message(LOG_INFO,pamh,"DID Authentication Successful !%d",s);
-          return PAM_SUCCESS;
-        }
-      }
-    }
-    log_message(LOG_INFO,pamh,"No Credential Retrieved , Authentication Failure");
-    pclose(output);
-
-    log_message(LOG_INFO,pamh,"Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
-    
+    log_message(LOG_INFO, pamh, "Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
   }
-    
-    return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
+  else
+  {
+    len = snprintf(command, sizeof(command), "/bin/bash ${cwd}/fetchUser.sh %s", user);
+    output = popen(command, "r"); // update this location based on user path , and copy the script inside src/ to user path (if reqd)
+
+    if (output == NULL)
+    {
+      log_message(LOG_INFO, pamh, "POPEN: Failed to execute");
+    }
+    else
+    {
+      int count = 1;
+
+      while (fgets(line, LINE_BUFSIZE - 1, output) != NULL)
+      {
+        log_message(LOG_INFO, pamh, "Execution Result %s", line);
+        s = myStrStr(line, user);
+        if (s)
+        {
+          log_message(LOG_INFO, pamh, "DID Authentication Successful !%d", s);
+          return PAM_SUCCESS;
+        }
+      }
+    }
+    log_message(LOG_INFO, pamh, "No Credential Retrieved , Authentication Failure");
+    pclose(output);
+
+    log_message(LOG_INFO, pamh, "Do Authentication DID Complete, Pls check /var/log/auth.log for more information");
+  }
+
+  // return PAM_SUCCESS;//this should be PAM_AUTH_ERR when running , make it SUCCESS to login ssh user temporarily
+  return PAM_AUTH_ERR;
 }
 
-void extractSecondItem(char *inputString, char *result, size_t resultSize, char delimiter) {
-    int count = 0;
-    size_t i = 0;
-    // printf("extractSecondItem %c\n", inputString[0]);
-    // Skip characters until the first delimiter is found
-    while (inputString[i] != '\0' && inputString[i] != delimiter) {
-        i++;
-    }
-    // printf("extractSecondItem i is %d\n", i);
+void extractSecondItem(char *inputString, char *result, size_t resultSize, char delimiter)
+{
+  int count = 0;
+  size_t i = 0;
+  // printf("extractSecondItem %c\n", inputString[0]);
+  // Skip characters until the first delimiter is found
+  while (inputString[i] != '\0' && inputString[i] != delimiter)
+  {
     i++;
-    // Copy characters to the result until the second delimiter is found or the end of the string
-    while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize -1 ) {
-        // printf("Char Result %c , %d, %d\n", inputString[i], i, count);
-        result[count] = inputString[i];
-        count++;
-        i++;
-    }
+  }
+  // printf("extractSecondItem i is %d\n", i);
+  i++;
+  // Copy characters to the result until the second delimiter is found or the end of the string
+  while (inputString[i] != '\0' && inputString[i] != delimiter && count < resultSize - 1)
+  {
+    // printf("Char Result %c , %d, %d\n", inputString[i], i, count);
+    result[count] = inputString[i];
+    count++;
+    i++;
+  }
 
-    // Null-terminate the result
-    result[count] = '\0';
+  // Null-terminate the result
+  result[count] = '\0';
 }
